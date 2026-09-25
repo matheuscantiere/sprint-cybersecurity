@@ -9,6 +9,7 @@ handler404 = "apps.common.views.custom_404_view"
 
 urlpatterns = [
     path(settings.ADMIN_URL, admin.site.urls),
+    path("", include("django_prometheus.urls")),  # exposes /metrics
     path("health/", health_view, name="health"),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="docs"),
