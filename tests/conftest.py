@@ -44,6 +44,13 @@ def viewer_auth_client(api_client, viewer_user):
 
 
 @pytest.fixture
+def admin_auth_client(api_client, admin_user):
+    token = RefreshToken.for_user(admin_user).access_token
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+    return api_client
+
+
+@pytest.fixture
 def seeded_catalog(db):
     from apps.catalog.models import (
         Attribute,

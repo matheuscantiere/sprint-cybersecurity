@@ -166,3 +166,25 @@ class TestLoginThrottle:
 
         resp = client.post(LOGIN_URL, payload, content_type="application/json")
         assert resp.status_code == 429
+
+
+AUDIT_LOGS_URL = "/api/v1/auth/audit-logs/"
+
+
+@pytest.mark.django_db
+class TestAuditLogList:
+    def test_admin_can_list_audit_logs(self, admin_auth_client, viewer_user):
+        AuditLog.objects.create(event=AuditLog.Event.LOGIN_OK, user=viewer_user)
+
+        resp = admin_auth_client.get(AUDIT_LOGS_URL)
+
+        assert resp.status_code == 200
+        assert any(row["event"] == "LOGIN_OK" for row in resp.json()["results"])
+
+    def test_non_admin_forbidden(self, viewer_auth_client):
+        resp = viewer_auth_client.get(AUDIT_LOGS_URL)
+        assert resp.status_code == 403
+
+    def test_anonymous_unauthorized(self, client):
+        resp = client.get(AUDIT_LOGS_URL)
+        assert resp.status_code == 401

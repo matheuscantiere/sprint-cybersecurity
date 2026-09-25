@@ -2,8 +2,9 @@ import uuid
 
 from django.conf import settings
 from drf_spectacular.utils import OpenApiExample, extend_schema
-from rest_framework import serializers, status
+from rest_framework import generics, serializers, status
 from rest_framework.exceptions import ValidationError
+from rest_framework.pagination import CursorPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -11,10 +12,11 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+from apps.common.permissions import HasRole
 from apps.common.serializers import ErrorEnvelopeSerializer
 
 from .models import AuditLog
-from .serializers import LoginSerializer, LogoutSerializer
+from .serializers import AuditLogSerializer, LoginSerializer, LogoutSerializer
 from .throttles import LoginRateThrottle
 
 
@@ -62,7 +64,11 @@ class _RefreshResponseSerializer(serializers.Serializer):
         ),
         OpenApiExample(
             "Login success",
-            value={"access": "<jwt-access-token>", "refresh": "<jwt-refresh-token>", "expires_in": 900},
+            value={
+                "access": "<jwt-access-token>",
+                "refresh": "<jwt-refresh-token>",
+                "expires_in": 900,
+            },
             response_only=True,
             status_codes=["200"],
         ),
@@ -219,3 +225,27 @@ class LogoutView(APIView):
             request_id=rid,
         )
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class _TimestampCursorPagination(CursorPagination):
+    ordering = "-timestamp"
+
+
+@extend_schema(
+    tags=["Auth"],
+    summary="List audit log entries",
+    description=(
+        "Returns authentication audit events (login/logout/refresh, ok and fail). "
+        "Requires ADMIN role. Cursor-paginated, newest first."
+    ),
+    responses={
+        200: AuditLogSerializer(many=True),
+        401: ErrorEnvelopeSerializer,
+        403: ErrorEnvelopeSerializer,
+    },
+)
+class AuditLogListView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated, HasRole.of("ADMIN")]
+    serializer_class = AuditLogSerializer
+    pagination_class = _TimestampCursorPagination
+    queryset = AuditLog.objects.select_related("user").order_by("-timestamp")

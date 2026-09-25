@@ -4,6 +4,8 @@ from rest_framework_simplejwt.serializers import (
     TokenRefreshSerializer,
 )
 
+from .models import AuditLog
+
 
 class LoginSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -19,3 +21,20 @@ class LogoutSerializer(serializers.Serializer):
 
 class RefreshSerializer(TokenRefreshSerializer):
     pass
+
+
+class AuditLogSerializer(serializers.ModelSerializer):
+    user = serializers.CharField(source="user.username", default=None, allow_null=True)
+
+    class Meta:
+        model = AuditLog
+        fields = [
+            "id",
+            "event",
+            "user",
+            "username_attempt",
+            "ip_address",
+            "user_agent",
+            "request_id",
+            "timestamp",
+        ]
