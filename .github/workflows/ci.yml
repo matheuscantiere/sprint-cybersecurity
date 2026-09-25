@@ -10,15 +10,14 @@ env:
   DJANGO_SECRET_KEY: ci-only-secret-key-not-for-production
   DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
   JWT_SIGNING_KEY: ci-only-jwt-signing-key-not-for-production
-  CRYPTOGRAPHY_KEY: ${{ secrets.CI_CRYPTOGRAPHY_KEY }}
   DATABASE_URL: postgres://fordspy:fordspy@localhost:5432/fordspy
 
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with: { python-version: "3.12" }
       - run: pip install -r requirements.txt -r requirements-dev.txt
       - run: make lint
@@ -27,27 +26,28 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      security-events: write
+    container: semgrep/semgrep:1.177.0
     steps:
-      - uses: actions/checkout@v4
-      - uses: semgrep/semgrep-action@v1
-        with:
-          config: p/owasp-top-ten p/python p/django
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      # --error fails the job on any finding (semgrep-action@v1 crashed silently and passed)
+      - run: >-
+          semgrep scan --error --metrics=off
+          --config p/owasp-top-ten --config p/python --config p/django
 
   secrets:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with: { fetch-depth: 0 }
-      - uses: gitleaks/gitleaks-action@v2
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   sca:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with: { python-version: "3.12" }
       - run: pip install pip-audit
       - run: pip-audit -r requirements.txt
@@ -55,6 +55,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     needs: [lint, sast, secrets, sca]
+    env:
+      CRYPTOGRAPHY_KEY: ${{ secrets.CI_CRYPTOGRAPHY_KEY }}
     services:
       db:
         image: postgres:16-alpine
@@ -66,8 +68,8 @@ jobs:
         options: >-
           --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with: { python-version: "3.12" }
       - run: pip install -r requirements.txt -r requirements-dev.txt
       - run: make cov
@@ -77,9 +79,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - run: docker build -t fordspy:${{ github.sha }} .
-      - uses: aquasecurity/trivy-action@master
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: fordspy:${{ github.sha }}
           severity: CRITICAL,HIGH

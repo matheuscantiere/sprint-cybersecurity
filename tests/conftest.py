@@ -110,8 +110,11 @@ def seeded_catalog(db):
 
 
 @pytest.fixture(autouse=True)
-def clear_cache():
+def clear_cache(settings):
     from django.core.cache import cache
+
+    # Prod uses a DB-backed cache shared across workers; tests run in one process.
+    settings.CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 
     cache.clear()
     yield

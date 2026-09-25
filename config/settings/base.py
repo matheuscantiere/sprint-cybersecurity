@@ -77,6 +77,15 @@ DATABASES = {
     "default": env.db("DATABASE_URL", default="postgres://fordspy:fordspy@localhost:5432/fordspy"),
 }
 
+# Shared across gunicorn workers so throttle counters and HMAC nonces are global.
+# ponytail: DB cache adds a query per throttled request; switch to Redis if load grows.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "django_cache",
+    }
+}
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {
@@ -153,8 +162,8 @@ SPECTACULAR_SETTINGS = {
 
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
 CORS_ALLOW_CREDENTIALS = False
-CORS_ALLOWED_METHODS = ["GET", "POST", "PATCH", "DELETE", "OPTIONS"]
-CORS_ALLOWED_HEADERS = ["authorization", "content-type", "x-request-id"]
+CORS_ALLOW_METHODS = ["GET", "POST", "PATCH", "DELETE", "OPTIONS"]
+CORS_ALLOW_HEADERS = ["authorization", "content-type", "x-request-id"]
 
 ADMIN_URL = env("ADMIN_URL", default="admin/")
 
