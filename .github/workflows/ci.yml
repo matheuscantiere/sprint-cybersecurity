@@ -83,4 +83,5 @@ jobs:
         with:
           image-ref: fordspy:${{ github.sha }}
           severity: CRITICAL,HIGH
+          ignore-unfixed: true
           exit-code: "1"

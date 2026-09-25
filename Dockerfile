@@ -1,4 +1,4 @@
-FROM python:3.12-slim-bookworm AS builder
+FROM python:3.12-slim AS builder
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential libpq-dev && rm -rf /var/lib/apt/lists/*
@@ -6,7 +6,7 @@ COPY requirements.txt requirements-dev.txt ./
 RUN pip wheel --no-cache-dir --no-deps --wheel-dir /wheels \
     -r requirements.txt -r requirements-dev.txt
 
-FROM python:3.12-slim-bookworm
+FROM python:3.12-slim
 WORKDIR /app
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     libpq5 && rm -rf /var/lib/apt/lists/* \
