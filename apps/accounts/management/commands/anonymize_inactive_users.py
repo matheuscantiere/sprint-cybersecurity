@@ -5,7 +5,7 @@ from datetime import timedelta
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from apps.accounts.models import User
+from apps.accounts.models import AuditLog, User
 
 
 class Command(BaseCommand):
@@ -18,9 +18,18 @@ class Command(BaseCommand):
         )
         count = 0
         for user in users:
+            # Failed-login rows keep the typed username in clear text; drop it too.
+            AuditLog.objects.filter(username_attempt__iexact=user.username).update(
+                username_attempt=None
+            )
             user.username = f"deleted_{user.pk}"
             user.email = ""
+            user.first_name = ""
+            user.last_name = ""
             user.role = "VIEWER"
-            user.save(update_fields=["username", "email", "role"])
+            user.set_unusable_password()
+            user.save(
+                update_fields=["username", "email", "first_name", "last_name", "role", "password"]
+            )
             count += 1
         self.stdout.write(self.style.SUCCESS(f"Anonymized {count} inactive user(s)."))

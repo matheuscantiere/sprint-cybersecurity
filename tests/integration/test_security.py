@@ -416,17 +416,28 @@ class TestRetentionCommands:
     def test_anonymize_old_inactive_users(self):
         from django.core.management import call_command
 
-        from apps.accounts.models import User
+        from apps.accounts.models import AuditLog, User
 
-        user = User.objects.create_user(username="inactive_old", password="testpass12345!")
+        user = User.objects.create_user(
+            username="inactive_old",
+            password="testpass12345!",
+            email="old@example.com",
+            first_name="Maria",
+            last_name="Silva",
+        )
         user.is_active = False
         user.date_joined = timezone.now() - timedelta(days=366)
         user.save(update_fields=["is_active", "date_joined"])
+        failed = AuditLog.objects.create(event="LOGIN_FAIL", username_attempt="inactive_old")
 
         call_command("anonymize_inactive_users", stdout=io.StringIO())
         user.refresh_from_db()
+        failed.refresh_from_db()
         assert user.username == f"deleted_{user.pk}"
         assert user.email == ""
+        assert (user.first_name, user.last_name) == ("", "")
+        assert not user.has_usable_password()
+        assert failed.username_attempt is None
 
     def test_anonymize_keeps_active_users(self):
         from django.core.management import call_command
