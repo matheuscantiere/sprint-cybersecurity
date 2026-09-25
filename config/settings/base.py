@@ -153,8 +153,8 @@ SPECTACULAR_SETTINGS = {
 
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
 CORS_ALLOW_CREDENTIALS = False
-CORS_ALLOWED_METHODS = ["GET", "POST", "PATCH", "DELETE", "OPTIONS"]
-CORS_ALLOWED_HEADERS = ["authorization", "content-type", "x-request-id"]
+CORS_ALLOW_METHODS = ["GET", "POST", "PATCH", "DELETE", "OPTIONS"]
+CORS_ALLOW_HEADERS = ["authorization", "content-type", "x-request-id"]
 
 ADMIN_URL = env("ADMIN_URL", default="admin/")
 
