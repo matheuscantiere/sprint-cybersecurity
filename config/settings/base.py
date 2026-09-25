@@ -77,6 +77,15 @@ DATABASES = {
     "default": env.db("DATABASE_URL", default="postgres://fordspy:fordspy@localhost:5432/fordspy"),
 }
 
+# Shared across gunicorn workers so throttle counters and HMAC nonces are global.
+# ponytail: DB cache adds a query per throttled request; switch to Redis if load grows.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "django_cache",
+    }
+}
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {
