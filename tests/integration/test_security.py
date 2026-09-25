@@ -490,8 +490,18 @@ class TestHmacMiddleware:
     def _make_signature(self, body: bytes, ts: int | None = None) -> tuple[str, str]:
         if ts is None:
             ts = int(time.time())
-        sig = hmac.new(self.SECRET.encode(), body, hashlib.sha256).hexdigest()
+        sig = hmac.new(self.SECRET.encode(), f"{ts}.".encode() + body, hashlib.sha256).hexdigest()
         return f"sha256={sig}", str(ts)
+
+    def _get(self, api_client, body, sig, ts):
+        return api_client.generic(
+            "GET",
+            "/health/",
+            data=body,
+            content_type="application/json",
+            HTTP_X_SIGNATURE=sig,
+            HTTP_X_SIGNATURE_TIMESTAMP=str(ts),
+        )
 
     @override_settings(HMAC_VERIFICATION_ENABLED=True)
     def test_valid_signature_passes_to_view(self, api_client):
@@ -565,3 +575,17 @@ class TestHmacMiddleware:
             HTTP_X_SIGNATURE_TIMESTAMP=str(ts),
         )
         assert resp.status_code == 401
+
+    @override_settings(HMAC_VERIFICATION_ENABLED=True)
+    def test_replayed_signature_rejected(self, api_client):
+        body = b'{"brand": "Ford"}'
+        sig, ts = self._make_signature(body)
+        assert self._get(api_client, body, sig, ts).status_code != 401
+        assert self._get(api_client, body, sig, ts).status_code == 401
+
+    @override_settings(HMAC_VERIFICATION_ENABLED=True)
+    def test_timestamp_swap_invalidates_signature(self, api_client):
+        body = b'{"brand": "Ford"}'
+        old_ts = int(time.time()) - 400
+        sig, _ = self._make_signature(body, ts=old_ts)
+        assert self._get(api_client, body, sig, int(time.time())).status_code == 401

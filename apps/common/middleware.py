@@ -5,11 +5,13 @@ import time
 import uuid
 
 from django.conf import settings
+from django.core.cache import cache
 from django.http import JsonResponse
 
 logger = logging.getLogger("apps.common.middleware")
 
 _MAX_BODY = 1_048_576  # 1 MB — mirrors DATA_UPLOAD_MAX_MEMORY_SIZE
+_HMAC_WINDOW = 300  # seconds
 
 
 class RequestIDMiddleware:
@@ -71,9 +73,9 @@ class HmacVerificationMiddleware:
     """Optional HMAC payload signing for service-to-service calls.
 
     Enabled via HMAC_VERIFICATION_ENABLED=True env var.
-    Signature header: X-Signature: sha256=<hex>
+    Signature header: X-Signature: sha256=<hex of HMAC(secret, "<timestamp>." + body)>
     Timestamp header: X-Signature-Timestamp: <unix epoch>
-    Replay window: 5 minutes.
+    Replay window: 5 minutes; each signature is accepted only once inside it.
     """
 
     def __init__(self, get_response):
@@ -102,7 +104,7 @@ class HmacVerificationMiddleware:
         except (ValueError, TypeError):
             return self._reject(request)
 
-        if abs(time.time() - ts) > 300:
+        if abs(time.time() - ts) > _HMAC_WINDOW:
             return self._reject(request)
 
         try:
@@ -117,9 +119,12 @@ class HmacVerificationMiddleware:
                 if isinstance(client.hmac_secret, str)
                 else client.hmac_secret
             )  # noqa: E501
-            expected = hmac_lib.new(secret, body, hashlib.sha256).hexdigest()
+            expected = hmac_lib.new(secret, f"{ts}.".encode() + body, hashlib.sha256).hexdigest()
             if hmac_lib.compare_digest(expected, provided_sig):
-                return None  # valid signature
+                # cache.add is atomic: False means this signature was already used.
+                if not cache.add(f"hmac-nonce:{provided_sig}", 1, timeout=_HMAC_WINDOW * 2):
+                    return self._reject(request)
+                return None  # valid, first use
 
         return self._reject(request)
 
