@@ -17,7 +17,7 @@ def test_debug_off_in_prod_settings():
 def test_nginx_prod_conf_suppresses_server_header():
     from pathlib import Path
 
-    conf = (Path(__file__).resolve().parents[1] / "nginx" / "nginx.prod.conf").read_text()
+    conf = (Path(__file__).resolve().parents[2] / "nginx" / "nginx.prod.conf").read_text()
     assert "server_tokens off" in conf
     assert "proxy_hide_header Server" in conf
     assert 'add_header Server "fordspy"' in conf
@@ -39,6 +39,6 @@ def test_nginx_prod_conf_port_8000_not_exposed():
     only nginx handles external traffic."""
     from pathlib import Path
 
-    conf = (Path(__file__).resolve().parents[1] / "nginx" / "nginx.prod.conf").read_text()
+    conf = (Path(__file__).resolve().parents[2] / "nginx" / "nginx.prod.conf").read_text()
     assert "listen 443" in conf
     assert "listen 80" in conf
