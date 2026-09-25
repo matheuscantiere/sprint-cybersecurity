@@ -21,8 +21,6 @@ SPECTACULAR_SETTINGS = {
     **SPECTACULAR_SETTINGS,
     "SWAGGER_UI_SETTINGS": {"persistAuthorization": False},
     "SERVE_PUBLIC": False,
-    "SERVE_AUTHENTICATION": [
-        "rest_framework_simplejwt.authentication.JWTAuthentication"
-    ],
+    "SERVE_AUTHENTICATION": ["rest_framework_simplejwt.authentication.JWTAuthentication"],
     "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"],
 }
