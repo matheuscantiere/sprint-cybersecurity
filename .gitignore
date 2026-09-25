@@ -44,3 +44,6 @@ tempCodeRunnerFile.py
 # OS
 .DS_Store
 backups/
+
+# Docs
+docs/

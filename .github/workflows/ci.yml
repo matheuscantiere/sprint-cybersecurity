@@ -10,7 +10,7 @@ env:
   DJANGO_SECRET_KEY: ci-only-secret-key-not-for-production
   DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
   JWT_SIGNING_KEY: ci-only-jwt-signing-key-not-for-production
-  CRYPTOGRAPHY_KEY: REDACTED-CI-KEY
+  CRYPTOGRAPHY_KEY: ${{ secrets.CI_CRYPTOGRAPHY_KEY }}
   DATABASE_URL: postgres://fordspy:fordspy@localhost:5432/fordspy
 
 jobs:
