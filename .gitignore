@@ -47,3 +47,7 @@ backups/
 
 # Docs
 docs/
+
+# TLS certs (generated/mounted at deploy time, never committed)
+nginx/certs/*.key
+nginx/certs/*.crt

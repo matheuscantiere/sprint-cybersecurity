@@ -1,0 +1,11 @@
+.git/
+.github/
+docs/
+nginx/
+monitoring/
+tests/
+scripts/
+*.md
+.env
+.env.*
+backups/
