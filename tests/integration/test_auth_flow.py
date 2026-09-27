@@ -167,6 +167,25 @@ class TestLoginThrottle:
         resp = client.post(LOGIN_URL, payload, content_type="application/json")
         assert resp.status_code == 429
 
+    def test_oversized_request_id_header_is_replaced(self, client):
+        resp = client.post(
+            LOGIN_URL,
+            {"username": "rid_test", "password": "bad"},
+            content_type="application/json",
+            HTTP_X_REQUEST_ID="A" * 60,
+        )
+        assert resp.status_code == 401
+        assert len(resp["X-Request-ID"]) == 32
+
+    def test_throttled_login_is_audited(self, client):
+        payload = {"username": "Throttle_Audit", "password": "bad"}
+        for _ in range(7):
+            client.post(LOGIN_URL, payload, content_type="application/json")
+
+        events = AuditLog.objects.filter(username_attempt="throttle_audit")
+        assert events.filter(event=AuditLog.Event.LOGIN_FAIL).count() == 5
+        assert events.filter(event=AuditLog.Event.LOGIN_THROTTLED).count() == 2
+
 
 AUDIT_LOGS_URL = "/api/v1/auth/audit-logs/"
 

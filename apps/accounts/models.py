@@ -20,6 +20,7 @@ class AuditLog(models.Model):
     class Event(models.TextChoices):
         LOGIN_OK = "LOGIN_OK", "Login successful"
         LOGIN_FAIL = "LOGIN_FAIL", "Login failed"
+        LOGIN_THROTTLED = "LOGIN_THROTTLED", "Login blocked by rate limit"
         LOGOUT = "LOGOUT", "Logout"
         REFRESH_OK = "REFRESH_OK", "Token refresh successful"
         REFRESH_FAIL = "REFRESH_FAIL", "Token refresh failed"
