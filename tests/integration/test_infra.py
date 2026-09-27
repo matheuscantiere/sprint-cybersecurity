@@ -20,7 +20,7 @@ def test_nginx_prod_conf_suppresses_server_header():
     conf = (Path(__file__).resolve().parents[2] / "nginx" / "nginx.prod.conf").read_text()
     assert "server_tokens off" in conf
     assert "proxy_hide_header Server" in conf
-    assert 'add_header Server "fordspy"' in conf
+    assert "location = /metrics" in conf
 
 
 def test_prod_settings_https_and_hsts():
