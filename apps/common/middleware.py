@@ -1,6 +1,7 @@
 import hashlib
 import hmac as hmac_lib
 import logging
+import re
 import time
 import uuid
 
@@ -8,10 +9,14 @@ from django.conf import settings
 from django.core.cache import cache
 from django.http import JsonResponse
 
+from apps.common.logging import request_id_var
+
 logger = logging.getLogger("apps.common.middleware")
 
 _MAX_BODY = 1_048_576  # 1 MB — mirrors DATA_UPLOAD_MAX_MEMORY_SIZE
 _HMAC_WINDOW = 300  # seconds
+# Client-supplied X-Request-ID must fit AuditLog.request_id (40) and stay log-safe
+_REQUEST_ID_RE = re.compile(r"^[\w-]{1,40}$")
 
 
 class RequestIDMiddleware:
@@ -19,8 +24,11 @@ class RequestIDMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        rid = request.META.get("HTTP_X_REQUEST_ID") or uuid.uuid4().hex
+        rid = request.META.get("HTTP_X_REQUEST_ID", "")
+        if not _REQUEST_ID_RE.match(rid):
+            rid = uuid.uuid4().hex
         request.request_id = rid
+        request_id_var.set(rid)
         response = self.get_response(request)
         response["X-Request-ID"] = rid
         return response
