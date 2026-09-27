@@ -91,6 +91,17 @@ class LoginView(TokenObtainPairView):
     serializer_class = LoginSerializer
     throttle_classes = [LoginRateThrottle]
 
+    def throttled(self, request, wait):
+        # Brute-force attempts cut off by the throttle never reach post(); record them here.
+        AuditLog.objects.create(
+            event=AuditLog.Event.LOGIN_THROTTLED,
+            username_attempt=request.data.get("username", "").lower(),
+            ip_address=_get_client_ip(request),
+            user_agent=request.META.get("HTTP_USER_AGENT", "")[:500],
+            request_id=_get_request_id(request),
+        )
+        super().throttled(request, wait)
+
     def post(self, request, *args, **kwargs):
         username = request.data.get("username", "").lower()
         ip = _get_client_ip(request)
